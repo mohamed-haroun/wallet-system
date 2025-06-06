@@ -13,6 +13,8 @@ use App\Exceptions\WalletException;
 use App\Models\TransactionType;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use App\Events\RequestCreated;
+use App\Events\RequestStatusUpdated;
 
 class RequestService implements RequestServiceInterface
 {
@@ -48,6 +50,9 @@ class RequestService implements RequestServiceInterface
             'status_id' => TransactionStatus::where('name', 'pending')->first()->id,
             'attachments' => $data['attachments'] ?? null,
         ]);
+
+        // Dispatch request created event
+        event(new RequestCreated($request));
 
         return $request->toArray();
     }
@@ -87,10 +92,12 @@ class RequestService implements RequestServiceInterface
             // Record approval action
             $this->requestRepository->createApproval($request->id, $adminId, $action, $notes);
 
+            // Dispatch status updated event
+            event(new RequestStatusUpdated($request, $adminId, $action));
+
             return $request->fresh()->load(['status', 'requestType', 'transaction'])->toArray();
         });
     }
-
 
     public function getRequest(string $requestId): array
     {
@@ -164,5 +171,14 @@ class RequestService implements RequestServiceInterface
             'transfer' => TransactionType::where('code', 'TF')->first(),
             default => throw new WalletException('Unsupported request type'),
         };
+    }
+
+    public function getAllRequests(array $filters = []): array
+    {
+        $requests = $this->requestRepository->getAllRequests($filters);
+
+        return $requests->map(function ($request) {
+            return $this->getRequest($request->id);
+        })->toArray();
     }
 }

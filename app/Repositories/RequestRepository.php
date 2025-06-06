@@ -80,4 +80,19 @@ class RequestRepository
             'notes' => $notes,
         ]);
     }
+
+    public function getAllRequests(array $filters = [])
+    {
+        $query = Request::query();
+
+        if (isset($filters['status'])) {
+            $query->whereHas('status', function ($q) use ($filters) {
+                $q->where('name', $filters['status']);
+            });
+        }
+
+        // Add other filters as needed
+
+        return $query->paginate($filters['per_page'] ?? 15);
+    }
 }

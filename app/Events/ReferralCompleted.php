@@ -2,18 +2,14 @@
 
 namespace App\Events;
 
-use App\Models\Request;
+use App\Models\Referral;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class RequestStatusUpdated
+class ReferralCompleted
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public function __construct(
-        public Request $request,
-        public string $adminId,
-        public string $action
-    ) {}
+    public function __construct(public Referral $referral) {}
 }

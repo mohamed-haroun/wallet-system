@@ -72,4 +72,15 @@ class ReferralRepository
             $query->where('status', 'completed');
         }])->findOrFail($programId);
     }
+
+    public function getActivePrograms()
+    {
+        return ReferralProgram::where('is_active', true)
+            ->where(function ($query) {
+                $query->whereNull('end_date')
+                    ->orWhere('end_date', '>=', now());
+            })
+            ->where('start_date', '<=', now())
+            ->get();
+    }
 }

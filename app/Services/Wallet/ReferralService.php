@@ -13,6 +13,9 @@ use App\Exceptions\WalletException;
 use App\Models\WalletType;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use App\Events\ReferralBonusReceived;
+use App\Events\ReferralCompleted;
+use App\Events\ReferralCreated;
 
 class ReferralService implements ReferralServiceInterface
 {
@@ -108,6 +111,9 @@ class ReferralService implements ReferralServiceInterface
             'status' => 'pending',
         ]);
 
+        // Dispatch event for new referral creation if needed
+        event(new ReferralCreated($referral));
+
         return $referral->toArray();
     }
 
@@ -149,6 +155,11 @@ class ReferralService implements ReferralServiceInterface
                 'status' => 'completed',
             ]);
 
+            // Dispatch events for completed referral and bonuses
+            event(new ReferralCompleted($referral));
+            event(new ReferralBonusReceived($referral, $program->referrer_reward));
+            event(new ReferralBonusReceived($referral, $program->referee_reward));
+
             return $referral->toArray();
         });
     }
@@ -183,5 +194,14 @@ class ReferralService implements ReferralServiceInterface
         ]);
 
         return $this->transactionRepository->processTransaction($transaction->id);
+    }
+
+    public function getActivePrograms(): array
+    {
+        $programs = $this->referralRepository->getActivePrograms();
+
+        return $programs->map(function ($program) {
+            return $this->getReferralProgram($program->id);
+        })->toArray();
     }
 }
