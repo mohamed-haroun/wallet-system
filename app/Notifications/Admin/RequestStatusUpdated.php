@@ -7,48 +7,45 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class RequestStatusUpdated extends Notification
+class RequestStatusUpdated extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    /**
-     * Create a new notification instance.
-     */
-    public function __construct()
+    public function __construct(
+        public $request,
+        public $processedBy
+    ) {}
+
+    public function via($notifiable)
     {
-        //
+        return ['database', 'mail'];
     }
 
-    /**
-     * Get the notification's delivery channels.
-     *
-     * @return array<int, string>
-     */
-    public function via(object $notifiable): array
-    {
-        return ['mail'];
-    }
-
-    /**
-     * Get the mail representation of the notification.
-     */
-    public function toMail(object $notifiable): MailMessage
+    public function toMail($notifiable)
     {
         return (new MailMessage)
-            ->line('The introduction to the notification.')
-            ->action('Notification Action', url('/'))
-            ->line('Thank you for using our application!');
+            ->subject("Request {$this->request->id} Status Updated")
+            ->line("The request #{$this->request->id} has been {$this->request->status} by {$this->processedBy->name}.")
+            ->line("Type: " . ucfirst($this->request->type))
+            ->line("Amount: {$this->request->amount} EGP")
+            ->lineIf(
+                $this->request->status === 'rejected',
+                "Reason: {$this->request->rejection_reason}"
+            )
+            ->action('View Request', url("/admin/requests/{$this->request->id}"));
     }
 
-    /**
-     * Get the array representation of the notification.
-     *
-     * @return array<string, mixed>
-     */
-    public function toArray(object $notifiable): array
+    public function toArray($notifiable)
     {
         return [
-            //
+            'type' => 'request_status_updated',
+            'request_id' => $this->request->id,
+            'request_type' => $this->request->type,
+            'status' => $this->request->status,
+            'amount' => $this->request->amount,
+            'processed_by' => $this->processedBy->id,
+            'processed_by_name' => $this->processedBy->name,
+            'message' => "Request #{$this->request->id} {$this->request->status} by {$this->processedBy->name}",
         ];
     }
 }
