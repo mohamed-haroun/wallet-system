@@ -1,11 +1,10 @@
 <?php
 
-namespace App\Http\Controllers\Wallet;
+namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Services\Wallet\ReferralService;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
+use App\Exceptions\WalletException;
 
 class ReferralController extends Controller
 {
@@ -16,69 +15,166 @@ class ReferralController extends Controller
         $this->referralService = $referralService;
     }
 
-    // GET /api/referral-programs/{id}
-    public function showProgram(string $id)
+    /**
+     * Get referral program details
+     *
+     * @param string $programId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getProgram($programId)
     {
-        $program = $this->referralService->getReferralProgram($id);
-        return response()->json($program);
+        try {
+            $program = $this->referralService->getReferralProgram($programId);
+            return response()->json($program);
+        } catch (WalletException $e) {
+            return response()->json(['message' => $e->getMessage()], 404);
+        }
     }
 
-    // GET /api/users/{userId}/referrals
-    public function getUserReferrals(string $userId)
+    /**
+     * Get user's referrals
+     *
+     * @param Request $request
+     * @param string $userId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getUserReferrals(Request $request, $userId)
     {
-        $referrals = $this->referralService->getUserReferrals($userId);
-        return response()->json($referrals);
+        try {
+            $referrals = $this->referralService->getUserReferrals($userId);
+            return response()->json($referrals);
+        } catch (WalletException $e) {
+            return response()->json(['message' => $e->getMessage()], 400);
+        }
     }
 
-    // POST /api/referral-programs
+    /**
+     * Create a new referral program
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function createProgram(Request $request)
     {
-        $data = $request->validate([
-            'name' => 'required|string',
-            'code' => 'required|string|unique:referral_programs,code',
-            'referrer_reward' => 'required|numeric',
-            'referee_reward' => 'required|numeric',
-            'reward_type' => 'nullable|string|in:fixed,percentage',
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'code' => 'required|string|max:255|unique:referral_programs,code',
+            'referrer_reward' => 'required|numeric|min:0',
+            'referee_reward' => 'required|numeric|min:0',
+            'reward_type' => 'nullable|in:fixed,percentage',
             'start_date' => 'required|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
-            'is_active' => 'nullable|boolean',
+            'end_date' => 'nullable|date|after:start_date',
+            'is_active' => 'boolean',
         ]);
 
-        $program = $this->referralService->createReferralProgram($data);
-        return response()->json($program, 201);
+        try {
+            $program = $this->referralService->createReferralProgram($validated);
+            return response()->json($program, 201);
+        } catch (WalletException $e) {
+            return response()->json(['message' => $e->getMessage()], 400);
+        }
     }
 
-    // POST /api/referrals
-    public function createReferral(Request $request)
+    /**
+     * Process a new referral
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function processReferral(Request $request)
     {
-        $data = $request->validate([
-            'referral_code' => 'required|string',
-            'referrer_id' => 'required|uuid',
-            'referee_id' => 'required|uuid|different:referrer_id',
+        $validated = $request->validate([
+            'referral_code' => 'required|string|exists:referral_programs,code',
+            'referrer_id' => 'required|exists:users,id',
+            'referee_id' => 'required|exists:users,id',
         ]);
 
         try {
             $referral = $this->referralService->processReferral(
-                $data['referral_code'],
-                $data['referrer_id'],
-                $data['referee_id']
+                $validated['referral_code'],
+                $validated['referrer_id'],
+                $validated['referee_id']
             );
             return response()->json($referral, 201);
-        } catch (\Exception $e) {
-            throw ValidationException::withMessages([
-                'referral' => [$e->getMessage()],
-            ]);
+        } catch (WalletException $e) {
+            return response()->json(['message' => $e->getMessage()], 400);
         }
     }
 
-    // POST /api/referrals/{id}/complete
-    public function completeReferral(string $id)
+    /**
+     * Complete a referral (process rewards)
+     *
+     * @param string $referralId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function completeReferral($referralId)
     {
         try {
-            $referral = $this->referralService->completeReferral($id);
+            $referral = $this->referralService->completeReferral($referralId);
             return response()->json($referral);
-        } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 400);
+        } catch (WalletException $e) {
+            return response()->json(['message' => $e->getMessage()], 400);
+        }
+    }
+
+    /**
+     * Get all referral programs
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function index()
+    {
+        try {
+            // Assuming we'll add a getAllPrograms method to the service
+            $programs = $this->referralService->getAllPrograms();
+            return response()->json($programs);
+        } catch (WalletException $e) {
+            return response()->json(['message' => $e->getMessage()], 400);
+        }
+    }
+
+    /**
+     * Update a referral program
+     *
+     * @param Request $request
+     * @param string $programId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updateProgram(Request $request, $programId)
+    {
+        $validated = $request->validate([
+            'name' => 'sometimes|string|max:255',
+            'code' => 'sometimes|string|max:255|unique:referral_programs,code,' . $programId,
+            'referrer_reward' => 'sometimes|numeric|min:0',
+            'referee_reward' => 'sometimes|numeric|min:0',
+            'reward_type' => 'sometimes|in:fixed,percentage',
+            'start_date' => 'sometimes|date',
+            'end_date' => 'nullable|date|after:start_date',
+            'is_active' => 'sometimes|boolean',
+        ]);
+
+        try {
+            // Assuming we'll add an updateProgram method to the service
+            $program = $this->referralService->updateProgram($programId, $validated);
+            return response()->json($program);
+        } catch (WalletException $e) {
+            return response()->json(['message' => $e->getMessage()], 400);
+        }
+    }
+
+    /**
+     * Get referral statistics
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function stats()
+    {
+        try {
+            // Assuming we'll add a getStats method to the service
+            $stats = $this->referralService->getStats();
+            return response()->json($stats);
+        } catch (WalletException $e) {
+            return response()->json(['message' => $e->getMessage()], 400);
         }
     }
 }

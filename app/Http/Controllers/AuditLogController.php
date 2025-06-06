@@ -2,65 +2,30 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreAuditLogRequest;
-use App\Http\Requests\UpdateAuditLogRequest;
 use App\Models\AuditLog;
+use Illuminate\Http\Request;
 
 class AuditLogController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function index(Request $request)
     {
-        //
+        $query = AuditLog::query();
+
+        if ($request->has('event')) {
+            $query->where('event', $request->event);
+        }
+
+        if ($request->has('user_id')) {
+            $query->where('user_id', $request->user_id);
+        }
+
+        $logs = $query->paginate(20);
+
+        return response()->json($logs);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreAuditLogRequest $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
     public function show(AuditLog $auditLog)
     {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(AuditLog $auditLog)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateAuditLogRequest $request, AuditLog $auditLog)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(AuditLog $auditLog)
-    {
-        //
+        return response()->json($auditLog);
     }
 }

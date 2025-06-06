@@ -2,65 +2,57 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreNotificationTemplateRequest;
-use App\Http\Requests\UpdateNotificationTemplateRequest;
 use App\Models\NotificationTemplate;
+use Illuminate\Http\Request;
 
 class NotificationTemplateController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        return response()->json(NotificationTemplate::all());
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'subject' => 'required|string|max:255',
+            'content' => 'required|string',
+            'variables' => 'nullable|json',
+            'type' => 'required|string|max:255',
+            'is_active' => 'boolean',
+        ]);
+
+        $template = NotificationTemplate::create($validated);
+
+        return response()->json($template, 201);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreNotificationTemplateRequest $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
     public function show(NotificationTemplate $notificationTemplate)
     {
-        //
+        return response()->json($notificationTemplate);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(NotificationTemplate $notificationTemplate)
+    public function update(Request $request, NotificationTemplate $notificationTemplate)
     {
-        //
+        $validated = $request->validate([
+            'name' => 'sometimes|string|max:255',
+            'subject' => 'sometimes|string|max:255',
+            'content' => 'sometimes|string',
+            'variables' => 'nullable|json',
+            'type' => 'sometimes|string|max:255',
+            'is_active' => 'sometimes|boolean',
+        ]);
+
+        $notificationTemplate->update($validated);
+
+        return response()->json($notificationTemplate);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateNotificationTemplateRequest $request, NotificationTemplate $notificationTemplate)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(NotificationTemplate $notificationTemplate)
     {
-        //
+        $notificationTemplate->delete();
+
+        return response()->json(null, 204);
     }
 }

@@ -2,65 +2,51 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreAdminProfileRequest;
-use App\Http\Requests\UpdateAdminProfileRequest;
 use App\Models\AdminProfile;
+use App\Models\User;
+use Illuminate\Http\Request;
 
 class AdminProfileController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        return response()->json(AdminProfile::all());
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'admin_id' => 'required|exists:users,id',
+            'position' => 'nullable|string|max:255',
+            'department' => 'nullable|string|max:255',
+        ]);
+
+        $adminProfile = AdminProfile::create($validated);
+
+        return response()->json($adminProfile, 201);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreAdminProfileRequest $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
     public function show(AdminProfile $adminProfile)
     {
-        //
+        return response()->json($adminProfile);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(AdminProfile $adminProfile)
+    public function update(Request $request, AdminProfile $adminProfile)
     {
-        //
+        $validated = $request->validate([
+            'position' => 'nullable|string|max:255',
+            'department' => 'nullable|string|max:255',
+        ]);
+
+        $adminProfile->update($validated);
+
+        return response()->json($adminProfile);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateAdminProfileRequest $request, AdminProfile $adminProfile)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(AdminProfile $adminProfile)
     {
-        //
+        $adminProfile->delete();
+
+        return response()->json(null, 204);
     }
 }

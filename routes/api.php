@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\RequestController;
 use App\Http\Controllers\WalletController;
 use Illuminate\Http\Request;
@@ -25,4 +26,17 @@ Route::prefix('requests')->group(function () {
     Route::post('/{requestId}/process', [RequestController::class, 'process']);
     Route::get('/{requestId}', [RequestController::class, 'show']);
     Route::get('/user/{userId}', [RequestController::class, 'listByUser']);
+});
+
+Route::prefix('referrals')->group(function () {
+    Route::get('/', [ReferralController::class, 'index']);
+    Route::get('/stats', [ReferralController::class, 'stats']);
+    Route::post('/', [ReferralController::class, 'createProgram']);
+    Route::get('/{programId}', [ReferralController::class, 'getProgram']);
+    Route::put('/{programId}', [ReferralController::class, 'updateProgram']);
+
+    Route::post('/process', [ReferralController::class, 'processReferral']);
+    Route::post('/{referralId}/complete', [ReferralController::class, 'completeReferral']);
+
+    Route::get('/user/{userId}', [ReferralController::class, 'getUserReferrals']);
 });

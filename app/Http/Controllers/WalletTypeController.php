@@ -2,65 +2,53 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreWalletTypeRequest;
-use App\Http\Requests\UpdateWalletTypeRequest;
 use App\Models\WalletType;
+use Illuminate\Http\Request;
 
 class WalletTypeController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        return response()->json(WalletType::all());
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'currency_code' => 'required|string|size:3',
+            'allow_negative' => 'boolean',
+            'is_active' => 'boolean',
+        ]);
+
+        $walletType = WalletType::create($validated);
+
+        return response()->json($walletType, 201);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreWalletTypeRequest $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
     public function show(WalletType $walletType)
     {
-        //
+        return response()->json($walletType);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(WalletType $walletType)
+    public function update(Request $request, WalletType $walletType)
     {
-        //
+        $validated = $request->validate([
+            'name' => 'sometimes|string|max:255',
+            'currency_code' => 'sometimes|string|size:3',
+            'allow_negative' => 'sometimes|boolean',
+            'is_active' => 'sometimes|boolean',
+        ]);
+
+        $walletType->update($validated);
+
+        return response()->json($walletType);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateWalletTypeRequest $request, WalletType $walletType)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(WalletType $walletType)
     {
-        //
+        $walletType->delete();
+
+        return response()->json(null, 204);
     }
 }

@@ -2,65 +2,53 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreTransactionTypeRequest;
-use App\Http\Requests\UpdateTransactionTypeRequest;
 use App\Models\TransactionType;
+use Illuminate\Http\Request;
 
 class TransactionTypeController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        return response()->json(TransactionType::all());
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'code' => 'required|string|max:255|unique:transaction_types',
+            'name' => 'required|string|max:255',
+            'flow' => 'required|in:in,out',
+            'requires_approval' => 'boolean',
+        ]);
+
+        $transactionType = TransactionType::create($validated);
+
+        return response()->json($transactionType, 201);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreTransactionTypeRequest $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
     public function show(TransactionType $transactionType)
     {
-        //
+        return response()->json($transactionType);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(TransactionType $transactionType)
+    public function update(Request $request, TransactionType $transactionType)
     {
-        //
+        $validated = $request->validate([
+            'code' => 'sometimes|string|max:255|unique:transaction_types,code,' . $transactionType->id,
+            'name' => 'sometimes|string|max:255',
+            'flow' => 'sometimes|in:in,out',
+            'requires_approval' => 'sometimes|boolean',
+        ]);
+
+        $transactionType->update($validated);
+
+        return response()->json($transactionType);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateTransactionTypeRequest $request, TransactionType $transactionType)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(TransactionType $transactionType)
     {
-        //
+        $transactionType->delete();
+
+        return response()->json(null, 204);
     }
 }

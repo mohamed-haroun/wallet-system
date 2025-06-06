@@ -2,65 +2,33 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreUserNotificationSettingRequest;
-use App\Http\Requests\UpdateUserNotificationSettingRequest;
+use App\Models\User;
 use App\Models\UserNotificationSetting;
+use Illuminate\Http\Request;
 
 class UserNotificationSettingController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function index(User $user)
     {
-        //
+        return response()->json($user->notificationSettings);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function update(Request $request, User $user, $notificationType)
     {
-        //
-    }
+        $validated = $request->validate([
+            'email_enabled' => 'boolean',
+            'sms_enabled' => 'boolean',
+            'push_enabled' => 'boolean',
+        ]);
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreUserNotificationSettingRequest $request)
-    {
-        //
-    }
+        $setting = UserNotificationSetting::updateOrCreate(
+            [
+                'user_id' => $user->id,
+                'notification_type' => $notificationType,
+            ],
+            $validated
+        );
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(UserNotificationSetting $userNotificationSetting)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(UserNotificationSetting $userNotificationSetting)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateUserNotificationSettingRequest $request, UserNotificationSetting $userNotificationSetting)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(UserNotificationSetting $userNotificationSetting)
-    {
-        //
+        return response()->json($setting);
     }
 }
